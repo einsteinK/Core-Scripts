@@ -37,9 +37,6 @@ local hasGraphicsSlider = true
 local GraphicsQualityLevels = 10 -- how many levels we allow on graphics slider
 local recordingVideo = false
 
-local volumeFlagExists, volumeFlagValue = pcall(function () return settings():GetFFlag("VolumeControlInGameEnabled") end)
-local hasVolumeSlider = volumeFlagExists and volumeFlagValue
-
 local currentMenuSelection = nil
 local lastMenuSelection = {}
 
@@ -81,7 +78,6 @@ if successFlagRead and luaFlagValue == true then
 	newMovementScripts = true
 end
 
-
 local function Color3I(r,g,b)
   return Color3.new(r/255,g/255,b/255)
 end
@@ -109,12 +105,6 @@ function resumeGameFunction(shield)
 		currentMenuSelection = nil
 		lastMenuSelection = {}
 		pcall(function() game:GetService("UserInputService").OverrideMouseIconEnabled = false end)
-		-- NOTE: This is a hacky way to raise an event when the menu closes. This is being used by the new
-		-- lua controls to correctly set the state of the mouse and shift lock mode when leaving the settings menu.
-		if UserSettings().GameSettings.ControlMode == Enum.ControlMode.MouseLockSwitch then
-			UserSettings().GameSettings.ControlMode = Enum.ControlMode.Classic
-			UserSettings().GameSettings.ControlMode = Enum.ControlMode.MouseLockSwitch
-		end
 	end)
 end
 
@@ -297,15 +287,6 @@ function setDisabledState(guiObject)
 end
 
 local function createHelpDialog(baseZIndex)
-
-	if helpButton == nil then
-		if gui:FindFirstChild("TopLeftControl") and gui.TopLeftControl:FindFirstChild("Help") then
-			helpButton = gui.TopLeftControl.Help
-		elseif gui:FindFirstChild("BottomRightControl") and gui.BottomRightControl:FindFirstChild("Help") then
-			helpButton = gui.BottomRightControl.Help
-		end
-	end
-
 	local shield = Instance.new("Frame")
 	shield.Name = "HelpDialogShield"
 	shield.Active = true
@@ -1358,25 +1339,11 @@ local function createGameSettingsMenu(baseZIndex, shield)
 				graphicsLevel.Value = graphicsLevel.Value + 1
 				graphicsSetter.Text = tostring(graphicsLevel.Value)
 				setGraphicsQualityLevel(graphicsLevel.Value)
-				
-				game:GetService("GuiService"):SendNotification("Graphics Quality",
-					"Increased to (" .. graphicsSetter.Text .. ")",
-					"",
-					2,
-					function()
-				end)
 			else
 				if (graphicsLevel.Value - 1) <= 0 then return end
 				graphicsLevel.Value = graphicsLevel.Value - 1
 				graphicsSetter.Text = tostring(graphicsLevel.Value)
 				setGraphicsQualityLevel(graphicsLevel.Value)
-				
-				game:GetService("GuiService"):SendNotification("Graphics Quality",
-					"Decreased to (" .. graphicsSetter.Text .. ")",
-					"",
-					2,
-					function()
-				end)
 			end
 		end)
 		
@@ -1422,51 +1389,49 @@ local function createGameSettingsMenu(baseZIndex, shield)
 	----------------------------------------------------------------------------------------------------
 	-- V O L U M E    S L I D E R
 	----------------------------------------------------------------------------------------------------
-	if hasVolumeSlider then
-		local maxVolumeLevel = 256
+	local maxVolumeLevel = 256
 
-		local volumeText = Instance.new("TextLabel")
-		volumeText.Name = "VolumeText"
-		volumeText.Text = "Volume"
-		volumeText.Size = UDim2.new(0,224,0,18)
+	local volumeText = Instance.new("TextLabel")
+	volumeText.Name = "VolumeText"
+	volumeText.Text = "Volume"
+	volumeText.Size = UDim2.new(0,224,0,18)
 
-		local volumeTextOffset = 25
-		if graphicsSlider and not graphicsSlider.Visible then
-			volumeTextOffset = volumeTextOffset + 30
-		end
-		volumeText.Position = UDim2.new(0,31,0, itemTop + volumeTextOffset)
-
-		volumeText.TextXAlignment = Enum.TextXAlignment.Left
-		volumeText.Font = Enum.Font.SourceSansBold
-		volumeText.FontSize = Enum.FontSize.Size18
-		volumeText.TextColor3 = Color3.new(1,1,1)
-		volumeText.ZIndex = baseZIndex + 4
-		volumeText.BackgroundTransparency = 1
-		volumeText.Parent = gameSettingsMenuFrame
-		volumeText.Visible = true
-
-		local volumeSliderOffset = 32
-		if graphicsSlider and not graphicsSlider.Visible then
-			volumeSliderOffset = volumeSliderOffset + 30
-		end
-		local volumeSlider, volumeLevel = RbxGui.CreateSliderNew( maxVolumeLevel,256,UDim2.new(0, 180, 0, itemTop + volumeSliderOffset) )
-		volumeSlider.Parent = gameSettingsMenuFrame
-		volumeSlider.Bar.ZIndex = baseZIndex + 3
-		volumeSlider.Bar.Slider.ZIndex = baseZIndex + 4
-		volumeSlider.BarLeft.ZIndex = baseZIndex + 3
-		volumeSlider.BarRight.ZIndex = baseZIndex + 3
-		volumeSlider.Bar.Fill.ZIndex = baseZIndex + 3
-		volumeSlider.FillLeft.ZIndex = baseZIndex + 3
-		volumeSlider.Visible = true
-		volumeLevel.Value = math.min(math.max(UserSettings().GameSettings.MasterVolume * maxVolumeLevel, 1), maxVolumeLevel)
-
-		volumeLevel.Changed:connect(function(prop)
-			local volume = volumeLevel.Value - 1 -- smallest value is 1, so need to subtract one for muting
-			UserSettings().GameSettings.MasterVolume = volume/maxVolumeLevel
-		end)
-
-		itemTop = itemTop + volumeSliderOffset
+	local volumeTextOffset = 25
+	if graphicsSlider and not graphicsSlider.Visible then
+		volumeTextOffset = volumeTextOffset + 30
 	end
+	volumeText.Position = UDim2.new(0,31,0, itemTop + volumeTextOffset)
+
+	volumeText.TextXAlignment = Enum.TextXAlignment.Left
+	volumeText.Font = Enum.Font.SourceSansBold
+	volumeText.FontSize = Enum.FontSize.Size18
+	volumeText.TextColor3 = Color3.new(1,1,1)
+	volumeText.ZIndex = baseZIndex + 4
+	volumeText.BackgroundTransparency = 1
+	volumeText.Parent = gameSettingsMenuFrame
+	volumeText.Visible = true
+
+	local volumeSliderOffset = 32
+	if graphicsSlider and not graphicsSlider.Visible then
+		volumeSliderOffset = volumeSliderOffset + 30
+	end
+	local volumeSlider, volumeLevel = RbxGui.CreateSliderNew( maxVolumeLevel,256,UDim2.new(0, 180, 0, itemTop + volumeSliderOffset) )
+	volumeSlider.Parent = gameSettingsMenuFrame
+	volumeSlider.Bar.ZIndex = baseZIndex + 3
+	volumeSlider.Bar.Slider.ZIndex = baseZIndex + 4
+	volumeSlider.BarLeft.ZIndex = baseZIndex + 3
+	volumeSlider.BarRight.ZIndex = baseZIndex + 3
+	volumeSlider.Bar.Fill.ZIndex = baseZIndex + 3
+	volumeSlider.FillLeft.ZIndex = baseZIndex + 3
+	volumeSlider.Visible = true
+	volumeLevel.Value = math.min(math.max(UserSettings().GameSettings.MasterVolume * maxVolumeLevel, 1), maxVolumeLevel)
+
+	volumeLevel.Changed:connect(function(prop)
+		local volume = volumeLevel.Value - 1 -- smallest value is 1, so need to subtract one for muting
+		UserSettings().GameSettings.MasterVolume = volume/maxVolumeLevel
+	end)
+
+	itemTop = itemTop + volumeSliderOffset
 	
 
 	----------------------------------------------------------------------------------------------------

@@ -1,4 +1,57 @@
---Include
+
+local useNewConsole = false
+pcall(function()
+	useNewConsole = settings():GetFFlag("NewInGameDevConsole")
+end)
+
+if useNewConsole then
+	local DeveloperConsoleModule;
+	local function RequireDeveloperConsoleModule()
+		if not DeveloperConsoleModule then
+			DeveloperConsoleModule = require(game:GetService("CoreGui"):WaitForChild('RobloxGui').Modules.DeveloperConsoleModule)
+		end
+	end
+
+	local screenGui = script.Parent:FindFirstChild("ControlFrame") or script.Parent
+
+	local ToggleConsole = Instance.new('BindableFunction')
+	ToggleConsole.Name = 'ToggleDevConsole'
+	ToggleConsole.Parent = screenGui
+	
+	local debounce = false
+
+	local developerConsole;
+	function ToggleConsole.OnInvoke(duplicate)
+		if debounce then
+			return
+		end
+		debounce = true
+		RequireDeveloperConsoleModule()
+		if not developerConsole or duplicate == true then
+			local permissions = DeveloperConsoleModule.GetPermissions()
+			local messagesAndStats = DeveloperConsoleModule.GetMessagesAndStats(permissions)
+			developerConsole = DeveloperConsoleModule.new(screenGui, permissions, messagesAndStats)
+			developerConsole:SetVisible(true)
+		else
+			developerConsole:SetVisible(not developerConsole.Visible)
+		end
+		debounce = false
+	end
+else
+	
+	
+	
+	
+	
+------------------------------------
+------------------------------------
+-- Old -----------------------------
+------------------------------------
+------------------------------------
+	
+	
+	
+	--Include
 local Create = assert(LoadLibrary("RbxUtility")).Create
 
 -- A Few Script Globals
@@ -307,7 +360,9 @@ function initializeDeveloperConsole()
 	
 	local flagExists, flagValue = pcall(function () return settings():GetFFlag("ConsoleCodeExecutionEnabled") end)
 	local codeExecutionEnabled = flagExists and flagValue
-	local isCreator = game:GetService("Players").LocalPlayer.userId == game.CreatorId
+	local creatorFlagExists, creatorFlagValue = pcall(function () return settings():GetFFlag("UseCanManageApiToDetermineConsoleAccess") end)
+	local creatorFlagEnabled = creatorFlagExists and creatorFlagValue
+	local isCreator = creatorFlagEnabled or game:GetService("Players").LocalPlayer.userId == game.CreatorId
 	local function shouldShowCommandBar()
 		return codeExecutionEnabled and isCreator
 	end
@@ -505,6 +560,7 @@ function initializeDeveloperConsole()
 		Position = UDim2.new(0, 0, 0, 0);
 		Size = UDim2.new(1, -23, 1, 0);
 		Text = "";
+		Modal = true;	-- make modal to unlock mouse in first-person/shift-lock
 	}
 
 	Create'TextLabel'{
@@ -1363,5 +1419,16 @@ function ToggleConsole.OnInvoke()
 		removeStatsListener()
 		clearCharts() 
 	end
+	
+end
+	
+	
+------------------------------------
+------------------------------------
+------------------------------------
+------------------------------------
+------------------------------------
+	
+	
 	
 end
